@@ -35,3 +35,35 @@ const static uint64_t K[80] =
         0x4CC5D4BECB3E42B6, 0x597F299CFC657E2A, 0x5FCB6FAB3AD6FAEC, 0x6C44198C4A475817
 };
 
+uint8_t* preprocessing(uint8_t *data, long size_bytes, size_t *total_length) {
+        int padding_length;
+        uint64_t msg_length_in_bits;
+        uint8_t *message_length, *pad, *input;
+        size_t offset = 0;
+        message_length = (uint8_t*)malloc(sizeof(uint8_t)*16);
+        if(!message_length) {
+                perror("malloc");
+                exit(1);
+        }
+
+        int rem = size_bytes%128;
+        if(rem < 112) {
+                padding_length = 112 - rem;
+        }
+        else {
+                padding_length = (128 - rem) + 112;
+        }
+        msg_length_in_bits = size_bytes * 8;
+        memset(message_length, 0, 16); //set first 8 bytes to 0
+        //message length in big-endian
+        for (int i = 0; i < 8; i++) {
+                message_length[15 - i] = (uint8_t)(msg_length_in_bits & 0xFF);
+                msg_length_in_bits >>= 8;
+        }
+        *total_length = size_bytes + padding_length + 16;
+        input = (uint8_t*)malloc(*total_length);
+        if(!input) {
+                perror("malloc");
+                exit(1);
+        }
+}
