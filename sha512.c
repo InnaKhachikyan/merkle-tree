@@ -36,34 +36,62 @@ const static uint64_t K[80] =
 };
 
 uint8_t* preprocessing(uint8_t *data, long size_bytes, size_t *total_length) {
-        int padding_length;
-        uint64_t msg_length_in_bits;
-        uint8_t *message_length, *pad, *input;
-        size_t offset = 0;
-        message_length = (uint8_t*)malloc(sizeof(uint8_t)*16);
-        if(!message_length) {
-                perror("malloc");
-                exit(1);
-        }
+	int padding_length;
+	uint64_t msg_length_in_bits;
+	uint8_t *message_length, *pad, *input;
+	size_t offset = 0;
+	message_length = (uint8_t*)malloc(sizeof(uint8_t)*16);
+	if(!message_length) {
+		perror("malloc");
+		exit(1);
+	}
 
-        int rem = size_bytes%128;
-        if(rem < 112) {
-                padding_length = 112 - rem;
-        }
-        else {
-                padding_length = (128 - rem) + 112;
-        }
-        msg_length_in_bits = size_bytes * 8;
-        memset(message_length, 0, 16); //set first 8 bytes to 0
-        //message length in big-endian
-        for (int i = 0; i < 8; i++) {
-                message_length[15 - i] = (uint8_t)(msg_length_in_bits & 0xFF);
-                msg_length_in_bits >>= 8;
-        }
-        *total_length = size_bytes + padding_length + 16;
-        input = (uint8_t*)malloc(*total_length);
-        if(!input) {
-                perror("malloc");
-                exit(1);
-        }
+	int rem = size_bytes%128;
+	if(rem < 112) {
+		padding_length = 112 - rem;
+	}
+	else {
+		padding_length = (128 - rem) + 112;
+	}
+	msg_length_in_bits = size_bytes * 8;
+	memset(message_length, 0, 16); //set first 8 bytes to 0
+	//message length in big-endian
+	for (int i = 0; i < 8; i++) {
+		message_length[15 - i] = (uint8_t)(msg_length_in_bits & 0xFF);
+		msg_length_in_bits >>= 8;
+	}
+	*total_length = size_bytes + padding_length + 16;
+	input = (uint8_t*)malloc(*total_length);
+	if(!input) {
+		perror("malloc");
+		exit(1);
+	}
+
+	pad = (uint8_t*)malloc(padding_length);
+	if(!pad) {
+		perror("malloc");
+		exit(1);
+	}
+	pad[0] = 0x80;
+	if(padding_length > 1) {
+		memset(pad+1, 0, padding_length-1);
+	}
+
+	memcpy(input+offset, data, size_bytes);
+	offset += size_bytes;
+	memcpy(input + offset, pad, padding_length);
+	offset += padding_length;
+	memcpy(input + offset, message_length, 16);
+	offset += 16;
+	if(offset != *total_length) {
+		printf("Input data length is wrong\n");
+		exit(1);
+	}
+	free(pad);
+	pad = NULL;
+	free(message_length);
+	message_length = NULL;
+
+	return input;
 }
+
