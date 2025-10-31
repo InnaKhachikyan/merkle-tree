@@ -95,3 +95,46 @@ uint8_t* preprocessing(uint8_t *data, long size_bytes, size_t *total_length) {
 	return input;
 }
 
+void round_function(uint8_t *block, uint64_t *hash) {
+	uint64_t W[80];
+	uint64_t A, B, C, D, E, F, G, H;
+	uint64_t T1, T2;
+
+	for (int i = 0; i < 16; i++) {
+		W[i] = ((uint64_t)block[i*8] << 56) | ((uint64_t)block[i*8+1] << 48) |
+		((uint64_t)block[i*8+2] << 40) | ((uint64_t)block[i*8+3] << 32) |
+		((uint64_t)block[i*8+4] << 24) | ((uint64_t)block[i*8+5] << 16) |
+		((uint64_t)block[i*8+6] << 8) | ((uint64_t)block[i*8+7]);
+	}
+
+	for (int i = 16; i < 80; i++) {
+		W[i] = sigma1(W[i-2]) + W[i-7] + sigma0(W[i-15]) + W[i-16];
+	}
+
+	A = hash[0]; B = hash[1]; C = hash[2]; D = hash[3];
+	E = hash[4]; F = hash[5]; G = hash[6]; H = hash[7];
+
+	// 80 rounds
+	for (int i = 0; i < 80; i++) {
+		T1 = H + SIGMA1(E) + CH(E, F, G) + K[i] + W[i];
+		T2 = SIGMA0(A) + MAJ(A, B, C);
+		H = G; 
+		G = F; 
+		F = E; 
+		E = D + T1;
+		D = C; 
+		C = B; 
+		B = A; 
+		A = T1 + T2;
+	}
+
+	hash[0] += A; 
+	hash[1] += B; 
+	hash[2] += C; 
+	hash[3] += D;
+	hash[4] += E; 
+	hash[5] += F; 
+	hash[6] += G; 
+	hash[7] += H;
+}
+
