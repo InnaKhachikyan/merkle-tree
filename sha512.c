@@ -54,8 +54,7 @@ uint8_t* preprocessing(uint8_t *data, long size_bytes, size_t *total_length) {
 		padding_length = (128 - rem) + 112;
 	}
 	msg_length_in_bits = size_bytes * 8;
-	memset(message_length, 0, 16); //set first 8 bytes to 0
-	//message length in big-endian
+	memset(message_length, 0, 16);
 	for (int i = 0; i < 8; i++) {
 		message_length[15 - i] = (uint8_t)(msg_length_in_bits & 0xFF);
 		msg_length_in_bits >>= 8;
@@ -114,7 +113,6 @@ void round_function(uint8_t *block, uint64_t *hash) {
 	A = hash[0]; B = hash[1]; C = hash[2]; D = hash[3];
 	E = hash[4]; F = hash[5]; G = hash[6]; H = hash[7];
 
-	// 80 rounds
 	for (int i = 0; i < 80; i++) {
 		T1 = H + SIGMA1(E) + CH(E, F, G) + K[i] + W[i];
 		T2 = SIGMA0(A) + MAJ(A, B, C);
@@ -136,5 +134,35 @@ void round_function(uint8_t *block, uint64_t *hash) {
 	hash[5] += F; 
 	hash[6] += G; 
 	hash[7] += H;
+}
+
+uint64_t* sha512(uint8_t *binary_data, long size) {
+        size_t total;
+        uint8_t *processed_data = preprocessing(binary_data, size, &total);
+        if(!processed_data) {
+                printf("Preprocessing went wrong\n");
+                free(binary_data);
+                binary_data = NULL;
+                exit(1);
+        }
+
+        hash[0] = 0x6A09E667F3BCC908;
+        hash[1] = 0xBB67AE8584CAA73B;
+        hash[2] = 0x3C6EF372FE94F82B;
+        hash[3] = 0xA54FF53A5F1D36F1;
+        hash[4] = 0x510E527FADE682D1;
+        hash[5] = 0x9B05688C2B3E6C1F;
+        hash[6] = 0x1F83D9ABFB41BD6B;
+        hash[7] = 0x5BE0CD19137E2179;
+
+        for (size_t i = 0; i < total; i += 128) {
+                round_function(processed_data + i, hash);
+        }
+
+        free(processed_data);
+        binary_data = NULL;
+        processed_data = NULL;
+
+        return hash;
 }
 
