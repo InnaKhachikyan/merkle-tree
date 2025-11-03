@@ -36,4 +36,39 @@ int calculate_num_levels(int num_leaves) {
         return ++levels;
 }
 
+uint64_t* final_hash(const char *filename) {
 
+// opening file to get the binary data
+        FILE *fp = fopen(filename, "rb");
+        if(!fp) {
+                perror("fopen failed");
+                exit(1);
+        }
+        long size = get_file_size(fp);
+        if(size < 0) {
+                perror("get_file_size failed");
+                fclose(fp);
+                exit(1);
+        }
+        uint8_t *binary_data = (uint8_t*)malloc(size);
+        if(!binary_data) {
+                perror("malloc");
+                exit(1);
+        }
+        if(fread(binary_data, 1, size, fp) != size) {
+                perror("fread");
+                free(binary_data);
+                binary_data = NULL;
+                fclose(fp);
+                exit(1);
+        }
+        fclose(fp);
+
+        int num_leaves;
+        if(size%CHUNK_SIZE == 0) {
+                num_leaves = size/CHUNK_SIZE;
+        }
+        else {
+                num_leaves = size/CHUNK_SIZE + 1;
+        }
+}
